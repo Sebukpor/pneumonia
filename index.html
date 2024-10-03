@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pneumonia Detection - DAS medhub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #FFA500; /* Orange for DAS */
+            display: inline;
+        }
+
+        h1 span {
+            color: #008000; /* Green for medhub */
+        }
+
+        #image-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center; /* Center the image horizontally */
+            align-items: center; /* Center the image vertically */
+            min-height: 500px; /* Minimum height to make the container larger */
+        }
+
+        #uploaded-image {
+            max-width: 80%; /* Large enough to analyze but will scale based on the view */
+            max-height: 500px; /* Maximum height of the image */
+            display: none; /* Hide until image is uploaded */
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        #predict-button {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #predict-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>DAS <span>medhub</span></h1>
+    <h2>Pneumonia Classification From Chest X-Ray Images</h2>
+
+    <input type="file" id="image-upload" accept="image/*">
+    <button id="predict-button" onclick="predict()">Predict</button>
+
+    <div id="image-container">
+        <img id="uploaded-image" src="#" alt="Uploaded Image">
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        let model;
+
+        async function loadModel() {
+            model = await tf.loadGraphModel('model/model.json');
+            console.log('Model loaded');
+        }
+
+        loadModel();
+
+        const imageUpload = document.getElementById('image-upload');
+        const uploadedImage = document.getElementById('uploaded-image');
+        const predictButton = document.getElementById('predict-button');
+        const resultDiv = document.getElementById('result');
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            // Clear previous results when a new image is uploaded
+            resultDiv.innerText = '';
+            predictButton.disabled = true; // Disable the button until the image is loaded
+
+            reader.onload = function(e) {
+                uploadedImage.src = e.target.result;
+                uploadedImage.style.display = 'block';
+                predictButton.style.display = 'inline-block'; // Show the predict button
+                predictButton.disabled = false; // Enable the button after the image is displayed
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        async function predict() {
+            predictButton.disabled = true; // Disable the button during prediction
+            resultDiv.innerText = 'Predicting...';
+
+            // Preprocess the image
+            const tensorImg = tf.browser.fromPixels(uploadedImage)
+                .resizeNearestNeighbor([224, 224]) // Resize to 224x224, which is the input size expected by the model
+                .toFloat()
+                .expandDims(0)
+                .div(tf.scalar(255));
+
+            // Make the prediction
+            const predictions = await model.predict(tensorImg).data();
+            const result = predictions[0] > 0.5 ? 'Pneumonia' : 'Normal';
+            const confidence = predictions[0]; // Confidence is predictions[0]
+
+            // Display the result
+            resultDiv.innerText = `Prediction: ${result}, Confidence: ${(confidence * 100).toFixed(2)}%`;
+            predictButton.disabled = false; // Enable the button again
+        }
+    </script>
+</body>
+</html>
