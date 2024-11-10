@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pneumonia Detection - DAS medhub</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 20px;
-            background-color: #f4f6f8;
         }
 
         h1 {
@@ -24,16 +24,6 @@
 
         #image-container {
             margin-top: 20px;
-            display: flex;
-            justify-content: center; /* Center the image horizontally */
-            align-items: center; /* Center the image vertically */
-            min-height: 500px; /* Minimum height to make the container larger */
-        }
-
-        #uploaded-image {
-            max-width: 80%; /* Large enough to analyze but will scale based on the view */
-            max-height: 500px; /* Maximum height of the image */
-            display: none; /* Hide until image is uploaded */
         }
 
         #result {
@@ -62,13 +52,13 @@
 </head>
 <body>
     <h1>DAS <span>medhub</span></h1>
-    <h2>Pneumonia Classification From Chest X-Ray Images</h2>
+    <h2>Pneumonia classification from chest x-rays</h2>
 
     <input type="file" id="image-upload" accept="image/*">
     <button id="predict-button" onclick="predict()">Predict</button>
 
     <div id="image-container">
-        <img id="uploaded-image" src="#" alt="Uploaded Image">
+        <img id="uploaded-image" src="#" alt="Uploaded Image" style="max-width: 300px; display: none;">
     </div>
 
     <div id="result"></div>
@@ -76,12 +66,18 @@
     <script>
         let model;
 
+        // Load the model
         async function loadModel() {
-            model = await tf.loadGraphModel('model/model.json');
-            console.log('Model loaded');
+            try {
+                model = await tf.loadGraphModel('model/model.json');
+                console.log('Model loaded successfully');
+            } catch (error) {
+                console.error('Error loading model:', error);
+                resultDiv.innerText = 'Error loading model. Please try again later.';
+            }
         }
 
-        loadModel();
+        loadModel();  // Call loadModel when the page loads
 
         const imageUpload = document.getElementById('image-upload');
         const uploadedImage = document.getElementById('uploaded-image');
@@ -110,20 +106,29 @@
             predictButton.disabled = true; // Disable the button during prediction
             resultDiv.innerText = 'Predicting...';
 
-            // Preprocess the image
-            const tensorImg = tf.browser.fromPixels(uploadedImage)
-                .resizeNearestNeighbor([224, 224]) // Resize to 224x224, which is the input size expected by the model
-                .toFloat()
-                .expandDims(0)
-                .div(tf.scalar(255));
+            try {
+                // Preprocess the image
+                const tensorImg = tf.browser.fromPixels(uploadedImage)
+                    .resizeNearestNeighbor([224, 224]) // Resize to model's input size
+                    .toFloat()
+                    .expandDims(0)
+                    .div(tf.scalar(255));  // Normalize image to [0, 1] range
 
-            // Make the prediction
-            const predictions = await model.predict(tensorImg).data();
-            const result = predictions[0] > 0.5 ? 'Pneumonia' : 'Normal';
-            const confidence = predictions[0]; // Confidence is predictions[0]
+                // Make the prediction
+                const predictions = await model.predict(tensorImg).data();
 
-            // Display the result
-            resultDiv.innerText = `Prediction: ${result}, Confidence: ${(confidence * 100).toFixed(2)}%`;
+                // Handle the prediction result
+                const isInfected = predictions[0] <= 0.5;
+                const confidence = isInfected ? (1 - predictions[0]) * 100 : predictions[0] * 100;
+                const result = isInfected ? 'Normal':'Pneumonia';
+
+                // Display the result with confidence score
+                resultDiv.innerText = `Prediction: ${result} (${confidence.toFixed(2)}% confidence)`;
+            } catch (error) {
+                console.error('Error during prediction:', error);
+                resultDiv.innerText = 'Error during prediction. Please try again later.';
+            }
+
             predictButton.disabled = false; // Enable the button again
         }
     </script>
