@@ -217,16 +217,18 @@
             const { jsPDF } = window.jspdf;
 
             const name = document.getElementById('name').value;
+             const name = document.getElementById('id').value;
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
 
-            if (!name || !age || !gender) {
+            if (!name || !patient_id|| !age || !gender) {
                 alert("Please fill out all demographic details.");
                 return;
             }
 
             const pdf = new jsPDF();
             pdf.text(10, 10, `Name: ${name}`);
+            pdf.text(10, 20, `Patient ID: ${id}`);
             pdf.text(10, 20, `Age: ${age}`);
             pdf.text(10, 30, `Gender: ${gender}`);
             pdf.text(10, 40, `Prediction: ${resultDiv.innerText}`);
