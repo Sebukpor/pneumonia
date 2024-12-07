@@ -114,6 +114,7 @@
     <form id="demographics-form">
         <h3>Enter Demographics</h3>
         <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="id" placeholder="Patient ID" required>
         <input type="number" id="age" placeholder="Age" required>
         <select id="gender">
             <option value="Male">Male</option>
@@ -217,11 +218,11 @@
             const { jsPDF } = window.jspdf;
 
             const name = document.getElementById('name').value;
-             const name = document.getElementById('id').value;
+            const id = document.getElementById('id').value;
             const age = document.getElementById('age').value;
             const gender = document.getElementById('gender').value;
 
-            if (!name || !patient_id|| !age || !gender) {
+            if (!name || !id || !age || !gender) {
                 alert("Please fill out all demographic details.");
                 return;
             }
@@ -229,12 +230,12 @@
             const pdf = new jsPDF();
             pdf.text(10, 10, `Name: ${name}`);
             pdf.text(10, 20, `Patient ID: ${id}`);
-            pdf.text(10, 20, `Age: ${age}`);
-            pdf.text(10, 30, `Gender: ${gender}`);
-            pdf.text(10, 40, `Prediction: ${resultDiv.innerText}`);
+            pdf.text(10, 30, `Age: ${age}`);
+            pdf.text(10, 40, `Gender: ${gender}`);
+            pdf.text(10, 50, `Prediction: ${resultDiv.innerText}`);
 
             const imgData = uploadedImage.src;
-            pdf.addImage(imgData, 'JPEG', 10, 50, 100, 100);
+            pdf.addImage(imgData, 'JPEG', 10, 60, 100, 100);
 
             pdf.save('pneumonia_result.pdf');
         }
